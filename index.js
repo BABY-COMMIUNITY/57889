@@ -10,6 +10,7 @@ require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const dns = require('dns').promises;
 const { performance } = require('perf_hooks');
+const FormData = require("form-data");
 const fs = require('fs');
 const app = express();
 app.use(cors());
@@ -1816,6 +1817,157 @@ app.get('/screenshot', (req, res) => {
   const screenshotURL = `https://api.screenshotmachine.com?key=${API_KEY}&url=${encodeURIComponent(url)}&dimension=1024x768`;
 
   res.json({ screenshotURL });
+});
+
+app.get('/gemini-1.5-flash-latest', async (req, res) => {
+    const { prompt } = req.query;
+
+    if (!prompt) {
+        return res.status(400).send('Prompt is required');
+    }
+
+    try {
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyDelUoJ2G_eNmB-FuvojYRXxJxyc0nHJ_Y`,
+            {
+                contents: [{
+                    parts: [{
+                        text: prompt,
+                    }],
+                }],
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+      
+        const message = response.data.candidates[0]?.content?.parts[0]?.text.trim() || "No response available";
+
+        res.json({
+            author: "NashBot",
+            response: message
+        });
+    } catch (error) {
+        console.error('Error:', error.response ? error.response.data : error.message);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+//anymodel
+async function aiArtGenerator(prompt) {
+  try {
+    const formData = new URLSearchParams({
+      prompt: prompt,
+      output_format: "bytes",
+      user_profile_id: "null",
+      anonymous_user_id: "a584e30d-1996-4598-909f-70c7ac715dc1",
+      request_timestamp: Date.now(),
+      user_is_subscribed: "false",
+      client_id: "pSgX7WgjukXCBoYwDM8G8GLnRRkvAoJlqa5eAVvj95o",
+    });
+
+    const response = await axios.post(
+      "https://ai-api.magicstudio.com/api/ai-art-generator",
+      formData.toString(),
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0",
+          Accept: "application/json, text/plain, */*",
+          "Accept-Encoding": "gzip, deflate, br, zstd",
+          "Accept-Language": "en-US,en;q=0.9",
+          Origin: "https://magicstudio.com",
+          Referer: "https://magicstudio.com/ai-art-generator/",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        responseType: "arraybuffer",
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+app.get("/generate-art", async (req, res) => {
+  const prompt = req.query.prompt;
+  if (!prompt) {
+    return res.status(400).json({ error: "Prompt is required" });
+  }
+
+  const filePath = path.join(__dirname, "art.png");
+
+  try {
+    const aiArt = await aiArtGenerator(prompt);
+    fs.writeFileSync(filePath, Buffer.from(aiArt, "utf8"));
+    
+    const imageUrl = `${req.protocol}://${req.get('host')}/art.png`;
+    res.json({ message: "Art generated successfully!", imageUrl });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/art.png", (req, res) => {
+  const filePath = path.join(__dirname, "art.png");
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      res.status(err.status).end();
+    }
+  });
+});
+
+//generate image
+const styles = [
+  "Hyper-Surreal Escape",
+  "Neon Fauvism",
+  "Post-Analog Glitchscape",
+  "AI Dystopia",
+  "Vivid Pop Explosion"
+];
+
+const fetchImage = async (prompt, styleIndex) => {
+  try {
+    const formData = new FormData();
+    formData.append("field-0", prompt);
+    formData.append("field-1", styles[styleIndex - 1]);
+
+    const response = await axios.post("https://devrel.app.n8n.cloud/form/flux", formData, {
+      headers: {
+        ...formData.getHeaders(),
+        Accept: "*/*",
+        "User-Agent": "Postify/1.0.0"
+      }
+    });
+
+    const data = response.data;
+    const $ = cheerio.load(data);
+    return {
+      image: $(".image-container img").attr("src"),
+      style: $(".style-text").text().replace("Style: ", "")
+    };
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
+app.get("/generate-image", async (req, res) => {
+  const { prompt, styleIndex } = req.query;
+
+  if (!prompt) {
+    return res.status(400).json({ error: "Prompt is required" });
+  }
+
+  const index = styleIndex ? parseInt(styleIndex) : Math.floor(Math.random() * styles.length) + 1;
+
+  try {
+    const imageUrl = await fetchImage(prompt, index);
+    return res.json(imageUrl);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 app.listen(port, () => {
