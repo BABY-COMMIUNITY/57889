@@ -21,7 +21,7 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 //llama3-8b-8192 
-const groq = new Groq({ apiKey: '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' });
+const groq = new Groq({ apiKey: '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' });
 
 app.get('/Llama', async (req, res) => {
   try {
