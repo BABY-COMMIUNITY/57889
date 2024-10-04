@@ -1970,6 +1970,66 @@ app.get("/generate-image", async (req, res) => {
   }
 });
 
+//Gen image with any model
+const CREATE_URL = 'https://arting.ai/api/cg/text-to-image/demo/create';
+const GET_URL = 'https://arting.ai/api/cg/text-to-image/demo/get';
+
+const VALID_MODELS = [
+    "dark-sushi-25d",
+    "pastel-mixed",
+    "revanimated",
+    "dreamshaper-v8",
+    "rev-anim",
+    "pastel-2"
+];
+
+app.get('/Gen-image', async (req, res) => {
+    const { prompt, model } = req.query;
+
+    if (!prompt) {
+        return res.status(400).json({ error: 'Prompt is required.' });
+    }
+
+    if (!model || !VALID_MODELS.includes(model)) {
+        return res.status(400).json({ error: `Model is required and must be one of the following: ${VALID_MODELS.join(', ')}` });
+    }
+
+    const payload = {
+        prompt,
+        model_id: model,
+        model_type: "sd",
+        style: "",
+        samples: "1",
+        height: 1024,
+        width: 1024,
+        negative_prompt: "Sexy female nuns , holding machine guns , masterpiece, highly detailed, 4k , showing some bare, garter belts made of bullets , realistic, crucifix around necks, perfect, no malformation, beautiful",
+        num_inference_steps: 0,
+        guidance_scale: 0,
+        seed: 0,
+        lora_model_id: "more_details",
+        lora_strength: 0.7,
+        safety_checker: "yes",
+        safety_checker_type: ""
+    };
+
+    try {
+        const createResponse = await axios.post(CREATE_URL, payload);
+        const request_id = createResponse.data.data.request_id;
+
+        const imageResponse = await axios.post(GET_URL, { request_id, model_id: "sdxl" }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            }
+        });
+
+        const imageUrl = imageResponse.data.data.output[0];
+        res.json({ imageUrl, createResponse: createResponse.data });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
