@@ -2089,6 +2089,43 @@ app.get("/googlenews", async (req, res) => {
   }
 });
 
+//simisimi v1
+app.get('/simisimi', async (req, res) => {
+  const { prompt } = req.query;
+  const lang = 'ph';
+
+  const url = 'https://simsimi.vn/web/simtalk';
+
+  const requestData = new URLSearchParams({
+    text: prompt,
+    lc: lang,
+  });
+
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+    'Accept': 'application/json, text/javascript, */*; q=0.01',
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+
+  try {
+    const response = await axios.post(url, requestData, { headers });
+
+    if (response.data && response.data.success) {
+      res.json({ 
+        reply: response.data.success, 
+        credits: "Joshua Apostol" 
+      });
+    } else {
+      res.status(500).json({ error: 'Unexpected response structure', credits: "joshua Apostol" });
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.response ? error.response.data : error.message, 
+      credits: "Joshua Apostol" 
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });

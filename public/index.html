@@ -367,6 +367,14 @@
       </div>
     </li>
     <li class="folder">
+      <div class="folder-header" onclick="toggleFolder('simisimi')">
+        <i class="fa-solid fa-face-smile"></i> SimiSimi
+      </div>
+      <div class="folder-content" id="simisimi">
+        <a onclick="page('/simisimi?q=hi')">simisimi V.1 (tagalog)</a>
+      </div>
+    </li>
+    <li class="folder">
       <div class="folder-header" onclick="toggleFolder('art')">
         <i class="fa-solid fa-image"></i> Generate Arts & Image
       </div>
@@ -375,7 +383,7 @@
         <a onclick="page('/generate-image?prompt=dog%20walking%20on%20the%20park&styleIndex=1')">Generate Image</a>
         <a onclick="page('/Gen-image?prompt=flying dog&model=')">Gen Image with models</a>
       </div>
-      </li>
+    </li>
     <li class="folder">
       <div class="folder-header" onclick="toggleFolder('tools-apis')">
         <i class="fab fa-facebook"></i> Tools APIs
